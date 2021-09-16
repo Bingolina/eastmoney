@@ -37,7 +37,7 @@ N = 5  # 假设分N个线程（实际是N+1个，线程0是是持股数量少于
 dir_path = "save/" + date + "/"
 Company_list_url = "http://data.eastmoney.com/hsgtcg/InstitutionStatistics.html"  # 不用改！！
 date_range_loc = '//li[text()="%s"]' % date_range
-date_range_check_loc = By.XPATH, '//li[@class="linklab spe-padding at" and text()="%s"]' % date_range
+date_range_check_loc = By.XPATH, '//li[@class="at" and text()="%s"]' % date_range
 init_dirs(dir_path)  # 创建初始文件夹
 
 
@@ -45,7 +45,7 @@ init_dirs(dir_path)  # 创建初始文件夹
 excel_name_for_companys = dir_path + date+"机构总数表.xlsx"  # 机构总数表
 
 def detail_url(code):  # 详情页的url
-    return "http://data.eastmoney.com/hsgtcg/StockHdDetail/%s/%s.html" % (code, date)
+    return "http://data.eastmoney.com/hsgtcg/InstitutionHdDetail/%s/%s.html" % (code, date)
 
 # 输入输出的表格命名
 def excel_name_for_get_codeList(n):
@@ -81,7 +81,7 @@ def setupDriver():
     return driver
 
 
-# 获得机构代号和持股数量
+# 1. 获得机构代号和持股数量
 def getCompanyAndAmount():
     result = []
     driver = setupDriver()
@@ -91,10 +91,10 @@ def getCompanyAndAmount():
     for page in range(1, page_number + 1):
         BP.log("获取机构第%d页" % page, "")
         print("获取机构第%d页" % page)
-        if page == 1:
-            if page_number == 1:
+        if page == 1: # 当来到第一页
+            if page_number == 1: # 如果全部只有1页
                 T = BP.getUrl(Company_list_url, "")
-            else:
+            else: # 如果不止一页，now_page_loc(page)检测当前是否在正确的页面
                 T = BP.getUrl(Company_list_url, now_page_loc(page))
             if T and date_range != "上一个交易日":
                 T = BP.click(date_range_loc, date_range_check_loc)
@@ -109,10 +109,10 @@ def getCompanyAndAmount():
         if T:  # 确认网页是在正确的位置，再获取信息
             # 下面是真正要的东西，获取代码和名称
             try:
-                date_loc_list = BP.driver_find_elements("//tbody/tr/td[1]")
-                name_loc_list = BP.driver_find_elements("//tbody/tr/td[2]/a")
-                code_loc_list = BP.driver_find_elements("//tbody/tr/td[2]/a")
-                total_loc_list = BP.driver_find_elements("//tbody/tr/td[4]")  # 当日持有股票总个数
+                date_loc_list = BP.driver_find_elements("//td[@class='desc_col']")
+                name_loc_list = BP.driver_find_elements("//a[@class='ellipsis w258']'")
+                code_loc_list = BP.driver_find_elements("//a[@class='ellipsis w258']'")
+                total_loc_list = BP.driver_find_elements("//td[@class='desc_col']/following-sibling::*[3]")  # 当日持有股票总个数
                 for i in range(len(date_loc_list)):
                     if date_loc_list[i].text == date:
                         result.append([date_loc_list[i].text, name_loc_list[i].text,
@@ -123,7 +123,7 @@ def getCompanyAndAmount():
                 BP.quit_browser()
                 return
         else:
-            BP.log("重要：需要重新运行", "e")
+            BP.log("重要：需要人为重新运行", "e")
             BP.quit_browser()
             return
     if len(result) < 158:
@@ -143,14 +143,14 @@ def main1(code, count, l):  # 分到这里的所有机构的持股数量都不�
     response = getResponse(date, code, l)
     if response:
         # DATE = re.findall('"HDDATE":"(.*?)",', response.text)  # 日期
-        participantName = re.findall('"PARTICIPANTNAME":"(.*?)",', response.text)  # 机构名称
-        SCODE = re.findall('"SCODE":"(.*?)",', response.text)  # 股票编号
-        SNAME = re.findall('"SNAME":"(.*?)",', response.text)  # 股票名称
-        CLOSEPRICE = re.findall('"CLOSEPRICE":(.*?),', response.text)  # 当日收盘价
-        SHAREHOLDSUM = re.findall('"SHAREHOLDSUM":(.*?),', response.text)  # 持股数量
-        SHAREHOLDPRICE = re.findall('"SHAREHOLDPRICE":(.*?),', response.text)  # 持股市值
-        ZDF = re.findall('"ZDF":(.*?),', response.text)  # 当日涨跌幅(%)
-        ONE = re.findall('"SHAREHOLDPRICEONE":(.*?),', response.text)  # 一日市值变化
+        participantName = re.findall('"ORG_NAME":"(.*?)",', response.text)  # 机构名称
+        SCODE = re.findall('"SECURITY_CODE":"(.*?)",', response.text)  # 股票编号
+        SNAME = re.findall('"SECURITY_NAME_ABBR":"(.*?)",', response.text)  # 股票名称
+        CLOSEPRICE = re.findall('"CLOSE_PRICE":(.*?),', response.text)  # 当日收盘价
+        SHAREHOLDSUM = re.findall('"HOLD_NUM":(.*?),', response.text)  # 持股数量
+        SHAREHOLDPRICE = re.findall('"HOLD_MARKET_CAP":(.*?),', response.text)  # 持股市值
+        ZDF = re.findall('"CHANGE_RATE":(.*?),', response.text)  # 当日涨跌幅(%)
+        ONE = re.findall('"HOLD_MARKET_CAPONE":(.*?),', response.text)  # 一日市值变化
         # FIVE = re.findall('"SHAREHOLDPRICEFIVE":(.*?),', response.text)  # 5日市值变化
         if len(SCODE) == count:
             for j in range(count):
@@ -185,8 +185,7 @@ def main2(code, count, l):
                 l.log("点击失败！", "e")
         if T:  # 确认网页是在正确的位置，再获取信息
             # 下面是真正要的东西，获取代码和名称
-            # if page >10:# 翻页过多的话就等久一点
-            #     time.sleep(10)
+
             try:
                 participantName = l.driver_find_element('//span[@class="jgname"]').text  # 机构名称
                 table = l.driver_find_elements('//div[@class="dataview-body"]/table/tbody/tr')
@@ -319,21 +318,6 @@ def Tag1():
     merge_excel(dir_path, date)
     merge_log(dir_path)
 
-    # 保存失败的机构编码
-    # if wrong_list:
-    #     df = pd.DataFrame(wrong_list, columns=['机构编号', '持股数量'])
-    #     df.to_excel(dir_path +"跑失败的机构.xlsx", index=False)
 
-def Tag2():
-    excel_path = dir_path + "跑失败的机构.xlsx"
-    getDetail_2(excel_path)  #
-    l = BasePage(setupDriver(), dir_path, 1)
 
-    print(" 开始！")
-    data = main2("C00019", 1753, l)
-    l.quit_browser()
-    result = pd.DataFrame()
-    result = result.append(data)
-    result.columns = ['日期', '机构编号', '机构名称', '股票编号', '股票名称', '当天收盘价', '持股数量', '持股市值', '当日涨跌幅', '一日市值变化']
-    result.to_excel("1.xlsx", index=False)
 

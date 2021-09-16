@@ -1,5 +1,5 @@
 import time
-from CompanyToCode import Tag1, Tag2
+from CompanyToCode import Tag1
 
 
 def set_time():

@@ -11,13 +11,11 @@ from selenium.webdriver import ActionChains
 
 def getResponse(date, code, l):  # 连接失败的话，尝试3次
     month, day = date.split("-")[1], date.split("-")[2]
-    url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?callback" \
-          "=jQuery1123004297432063462936_1618504179999&st=HDDATE&sr=-1&ps=50&p=1&token" \
-          "=894050c76af8597a853f5b408b759f5d&js=%7B%22data%22%3A(x)%2C%22pages%22%3A(tp)%2C%22font%22%3A(" \
-          "font)%7D&filter=(PARTICIPANTCODE%3D%27" + code + "%27)(MARKET+in+(%27001%27%2C%27003%27))(" \
-                                                            "HDDATE%3D%5E2021%2F" + str(
-        month) + "%2F" + str(day) + "%5E)&type=HSGTNHDDET"
-
+    url = "http://datacenter-web.eastmoney.com/api/data/v1/get?callback" \
+          "=jQuery112300510746542514402_1631816419742&sortColumns=HOLD_DATE&sortTypes=-1&pageSize=50&pageNumber=1&" \
+          "reportName=RPT_MUTUAL_HOLD_DET&columns=ALL&source=WEB&client=WEB" \
+          "&filter=(PARTICIPANT_CODE%3D%22" + code + "%22)(MARKET_CODE+in+(%22001%22%2C%22003%22))" \
+                                                            "(HOLD_DATE%3D%27"+ str(month) + "%27)"
 
     i = 0
     while i < 3:
